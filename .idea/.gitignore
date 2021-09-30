@@ -1,7 +1,9 @@
-*
+/*
 !.gitignore
-!inspectionProfiles/
+!inspectionProfiles
+!inspectionProfiles/Project_Default.xml
 !jsLinters
+!jsLinters/eslint.xml
 !encodings.xml
 !modules.xml
 !understanding-h2.iml
