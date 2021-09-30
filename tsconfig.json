@@ -1,0 +1,23 @@
+{
+  "files": [
+    "src/index.ts"
+  ],
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "esModuleInterop": false,
+    "exactOptionalPropertyTypes": true,
+    "strict": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "alwaysStrict": true,
+    "useUnknownInCatchVariables": true,
+    "target": "ESNext",
+    "lib": ["es2020"],
+    "module": "commonjs",
+    "outDir": "dist"
+  }
+}
