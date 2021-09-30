@@ -1,0 +1,8 @@
+*
+!.gitignore
+!inspectionProfiles/
+!jsLinters
+!encodings.xml
+!modules.xml
+!understanding-h2.iml
+!vcs.xml
