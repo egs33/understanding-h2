@@ -3,7 +3,7 @@ name: eslint
 on: push
 
 jobs:
-  static-testing:
+  eslint:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2

@@ -3,7 +3,7 @@ name: build
 on: push
 
 jobs:
-  static-testing:
+  build:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
