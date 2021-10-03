@@ -1,4 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Tcp } from './protocol/tcp';
+import { Request } from './protocol/http1-1';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -15,16 +17,7 @@ import { Tcp } from './protocol/tcp';
   const hostname = match[1];
   const port = Number.parseInt(match[2], 10);
 
-  const tcp = new Tcp(hostname, port, {
-    onData: async (data) => {
-      console.log(data.toString());
-      await tcp.end();
-      console.log('END');
-    },
-    onError: (error) => console.log('error', error),
-  });
-
-  await tcp.connect();
-  const resp = await tcp.write(`GET / HTTP/1.1\nHost:${hostname}\n\n`);
-  console.log(resp);
+  const request = new Request(hostname, port, {});
+  const resp = await request.execute();
+  console.log(resp.getHeaders());
 })();
