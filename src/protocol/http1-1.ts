@@ -126,7 +126,20 @@ export class Request {
         }),
       });
       await tcp.connect();
-      await tcp.write(`${this.option.method} ${this.option.path} HTTP/1.1${crlf}Host:${this.hostname}${crlf}${crlf}`);
+      const body = [
+        `${this.option.method} ${this.option.path} HTTP/1.1`,
+        `Host:${this.hostname}`,
+        ...(Object.entries(this.option.headers).map(([k, v]) => {
+          if (v.includes('\n')) {
+            throw new Error('Http header must not contains line breaks');
+          }
+          return `${k}:${v}`;
+        })),
+        '',
+        '',
+      ].join(crlf);
+      console.log(body);
+      await tcp.write(body);
     });
   }
 }
