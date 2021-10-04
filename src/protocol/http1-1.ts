@@ -1,4 +1,5 @@
 // eslint-disable-next-line max-classes-per-file
+import { writeFile } from 'fs/promises';
 import { Tcp } from './tcp';
 
 const crlf = '\r\n';
@@ -78,6 +79,14 @@ export class Response {
   public storeBody(): void {
     const index = this.receivingData?.indexOf(separator) ?? 0;
     this.bodyBuffer = this.receivingData?.slice(index + separator.length);
+  }
+
+  public async saveToFile(path: string): Promise<boolean> {
+    if (!this.bodyBuffer) {
+      return false;
+    }
+    await writeFile(path, new Uint8Array(this.bodyBuffer));
+    return true;
   }
 }
 
