@@ -140,7 +140,7 @@ export class Request {
         `Host:${this.hostname}`,
         ...(Object.entries(this.option.headers).map(([k, v]) => {
           if (v.includes('\n')) {
-            throw new Error('Http header must not contains line breaks');
+            throw new Error('Http header must not contain line breaks');
           }
           return `${k}:${v}`;
         })),
