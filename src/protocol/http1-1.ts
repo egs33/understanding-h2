@@ -13,12 +13,24 @@ export class Response {
 
   private isHeaderParsed = false;
 
+  private statusCode: number | null = null;
+
+  private statusText: string | null = null;
+
   private headers: ResponseHeader | null = null;
 
   private bodyBuffer: Buffer | undefined;
 
   public getBodyBuffer(): Buffer | undefined {
     return this.bodyBuffer;
+  }
+
+  public getStatusCode(): number | null {
+    return this.statusCode;
+  }
+
+  public getStatusText(): string | null {
+    return this.statusText;
   }
 
   public getHeaders(): ResponseHeader | null {
@@ -45,8 +57,10 @@ export class Response {
       return false;
     }
     this.isHeaderParsed = true;
-    const headerStr = this.receivingData.slice(0, index).toString();
-    this.headers = headerStr.split(crlf).slice(1).reduce((prev, row) => {
+    const [statusRow, ...headerRows] = this.receivingData.slice(0, index).toString().split(crlf);
+    this.statusCode = Number.parseInt(statusRow.slice(9, 12), 10);
+    this.statusText = statusRow.slice(13);
+    this.headers = headerRows.reduce((prev, row) => {
       const [name, value] = row.split(':', 2);
       return { ...prev, [name.toLowerCase().trim()]: value.trim() };
     }, {});

@@ -19,5 +19,7 @@ import { Request } from './protocol/http1-1';
 
   const request = new Request(hostname, port, {});
   const resp = await request.execute();
+  console.log(resp.getStatusCode());
+  console.log(resp.getStatusText());
   console.log(resp.getHeaders());
 })();
