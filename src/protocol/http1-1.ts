@@ -105,7 +105,7 @@ export class Response {
 }
 
 export type RequestOption = {
-  method: 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'OPTION' | 'TRACE',
+  method: 'GET' | 'POST' | 'HEAD' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'TRACE' | 'CONNECT',
   path: string,
   headers: { [k: string]: string }
 };
