@@ -1,6 +1,7 @@
 // eslint-disable-next-line max-classes-per-file
 import { writeFile } from 'fs/promises';
 import { Tcp } from './tcp';
+import { NewPromiseCapability } from '../util';
 
 const crlf = '\r\n';
 
@@ -125,44 +126,41 @@ export class Request {
 
   public async execute(): Promise<Response> {
     const response = new Response();
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises,no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
-      const tcp = new Tcp(this.hostname, this.port, {
-        onData: (async (data) => {
-          if (typeof data === 'string') {
-            reject(new Error('Unexpected error. (string data)'));
-            return;
-          }
-          response.appendData(data);
-          response.parseHeader();
-          if (response.isAllReceived()) {
-            response.storeBody();
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            await tcp.end();
-            resolve(response);
-          }
-        }),
-        onClose: ((hadError) => {
-          if (hadError) {
-            reject(new Error('Unexpected error. (onClose error)'));
-          }
-        }),
-      });
-      await tcp.connect();
-      const body = [
-        `${this.option.method} ${this.option.path} HTTP/1.1`,
-        `Host:${this.hostname}`,
-        ...(Object.entries(this.option.headers).map(([k, v]) => {
-          if (v.includes('\n')) {
-            throw new Error('Http header must not contain line breaks');
-          }
-          return `${k}:${v}`;
-        })),
-        '',
-        '',
-      ].join(crlf);
-      console.log(body);
-      await tcp.write(body);
+    const { promise, resolve, reject } = NewPromiseCapability<Response>();
+    const tcp = new Tcp(this.hostname, this.port, {
+      onData: (async (data) => {
+        if (typeof data === 'string') {
+          reject(new Error('Unexpected error. (string data)'));
+          return;
+        }
+        response.appendData(data);
+        response.parseHeader();
+        if (response.isAllReceived()) {
+          response.storeBody();
+          await tcp.end();
+          resolve(response);
+        }
+      }),
+      onClose: ((hadError) => {
+        if (hadError) {
+          reject(new Error('Unexpected error. (onClose error)'));
+        }
+      }),
     });
+    await tcp.connect();
+    const body = [
+      `${this.option.method} ${this.option.path} HTTP/1.1`,
+      `Host:${this.hostname}`,
+      ...(Object.entries(this.option.headers).map(([k, v]) => {
+        if (v.includes('\n')) {
+          throw new Error('Http header must not contain line breaks');
+        }
+        return `${k}:${v}`;
+      })),
+      '',
+      '',
+    ].join(crlf);
+    await tcp.write(body);
+    return promise;
   }
 }
