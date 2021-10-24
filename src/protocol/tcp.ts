@@ -1,5 +1,6 @@
 import type { Socket } from 'net';
 import { createConnection } from 'net';
+import type { Transport } from './transport';
 
 export type TcpOption = Partial<{
   encoding: BufferEncoding,
@@ -8,7 +9,7 @@ export type TcpOption = Partial<{
   onData: (data: Buffer | string) => void,
 }>;
 
-export class Tcp {
+export class Tcp implements Transport {
   private socket: Socket | null;
 
   constructor(private hostname: string, private port: number, private option: TcpOption) {
