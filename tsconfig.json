@@ -15,6 +15,7 @@
     "strictPropertyInitialization": true,
     "alwaysStrict": true,
     "useUnknownInCatchVariables": true,
+    "isolatedModules": true,
     "target": "ESNext",
     "lib": ["es2020"],
     "module": "commonjs",
