@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto';
 import type { Transport } from './transport';
 import { Tcp } from './tcp';
-import { NumToBytes } from '../util';
+import { BytesToNum, NumToBytes } from '../util';
+import { parseServerHello } from './tls1-2/server-hello';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export type Tls1_2Option = Partial<{
@@ -11,19 +12,78 @@ export type Tls1_2Option = Partial<{
   onData: (data: Buffer | string) => void,
 }>;
 
+export type ConnectionState = {
+  connectionEnd: 'client',
+  prfAlgorithm: 'tls_prf_sha256',
+  bulkEncryptionAlgorithm: null | 'rc4' | '3des' | 'aes',
+  macAlgorithm: null | 'hmac_md5' | 'hmac_sha1' | 'hmac_sha256' | 'hmac_sha384' | 'hmac_sha512',
+  compressionAlgorithm: null,
+  masterSecret: null | Buffer,
+  clientRandom: null | Buffer,
+  serverRandom: null | Buffer,
+};
+
+const initialState: ConnectionState = {
+  connectionEnd: 'client',
+  prfAlgorithm: 'tls_prf_sha256',
+  bulkEncryptionAlgorithm: null,
+  macAlgorithm: null,
+  compressionAlgorithm: null,
+  masterSecret: null,
+  clientRandom: null,
+  serverRandom: null,
+};
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class Tls1_2 implements Transport {
   private tcp: Tcp;
 
+  private readonly connectionState: ConnectionState = initialState;
+
+  private cipherSuite: null | number = null;
+
   constructor(private hostname: string, port: number, option: Tls1_2Option) {
     this.tcp = new Tcp(hostname, port, {
       onData: (data) => {
+        // TODO: consider fragmentation
         console.log(data);
+        if (typeof data === 'string') {
+          throw new Error('onData: string is unexpected');
+        }
+        this.parsePacket(data);
       },
       onClose: (hadError) => option.onClose?.(hadError),
       onError: (error) => option.onError?.(error),
       ...(option.encoding ? { encoding: option.encoding } : undefined),
     });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private parsePacket(data: Buffer): void {
+    const length = BytesToNum(data.slice(3, 5)) + 5;
+    const record = data.slice(0, length);
+    switch (record[0]) { // ContentType
+      case 22: { // handshake
+        switch (record[5]) { // handShakeType
+          case 2: { // Server Hello
+            const serverHello = parseServerHello(record);
+            this.connectionState.serverRandom = serverHello.random;
+            this.cipherSuite = serverHello.cipherSuite;
+            break;
+          }
+          default:
+            console.error('unsupported handshake type', record[5]);
+        }
+        break;
+      }
+      default:
+        console.error('unsupported content type', record[0]);
+    }
+
+    const rest = data.slice(length);
+    if (rest.length > 0) {
+      this.parsePacket(rest);
+    }
   }
 
   private sendClientHello(): Promise<void> {
@@ -58,6 +118,11 @@ export class Tls1_2 implements Transport {
     ];
 
     const date = new Date();
+    const clientRandom: number[] = [
+      ...NumToBytes(Math.floor(date.getTime() / 1000), 4),
+      ...randomBytes(28),
+    ];
+    this.connectionState.clientRandom = Buffer.from(clientRandom);
     const payload: number[] = [
       22, // ContentType: handshake
       3, 3, // ProtocolVersion: TLS1.2
@@ -65,8 +130,7 @@ export class Tls1_2 implements Transport {
       1, // HandshakeType: client_hello
       0, 0, 0, // length (temporary)
       3, 3, // ProtocolVersion: TLS1.2
-      ...NumToBytes(Math.floor(date.getTime() / 1000), 4),
-      ...randomBytes(28),
+      ...clientRandom,
       0, // SessionID length 0bytes
       ...NumToBytes(2, 2), // CipherSuite length
       0x00, 0x9e, // CipherSuite: TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 (0x009e)

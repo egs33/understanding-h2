@@ -13,14 +13,30 @@ export const NewPromiseCapability = <T extends unknown>(): PromiseCapability<T> 
   return capability as PromiseCapability<T>;
 };
 
-export const NumToBytes = (num: number, minBytes?: number): Uint8Array => {
-  let bytes = new Uint8Array();
-  for (let rest = num; rest > 0; rest = Math.floor(rest / 256)) {
-    bytes = new Uint8Array([rest % 256, ...bytes]);
-  }
-  if (!minBytes || bytes.length >= minBytes) {
-    return bytes;
+export const NumToBytes = (num: number, bytes: number): Buffer => {
+  const buf = Buffer.allocUnsafe(bytes);
+  buf.writeUIntBE(num, 0, bytes);
+  return buf;
+};
+
+export const BytesToNum = (buf: Buffer): number => buf.readUIntBE(0, buf.length);
+
+export class BufferStream {
+  private index = 0;
+
+  constructor(private readonly buffer: Buffer) {}
+
+  public readBytes(bytes: number): Buffer {
+    const buf = this.buffer.slice(this.index, this.index + bytes);
+    this.index += bytes;
+    return buf;
   }
 
-  return new Uint8Array([...(new Uint8Array(minBytes - bytes.length)), ...bytes]);
-};
+  public readNumber(bytes: number): number {
+    return BytesToNum(this.readBytes(bytes));
+  }
+
+  public skip(bytes: number): void {
+    this.index += bytes;
+  }
+}
