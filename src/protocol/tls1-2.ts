@@ -3,6 +3,8 @@ import type { Transport } from './transport';
 import { Tcp } from './tcp';
 import { BytesToNum, NumToBytes } from '../util';
 import { parseServerHello } from './tls1-2/server-hello';
+import type { Cert } from './tls1-2/server-certificate';
+import { parseServerCertificate } from './tls1-2/server-certificate';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export type Tls1_2Option = Partial<{
@@ -42,6 +44,8 @@ export class Tls1_2 implements Transport {
 
   private cipherSuite: null | number = null;
 
+  private certs: null | Cert[] = null;
+
   constructor(private hostname: string, port: number, option: Tls1_2Option) {
     this.tcp = new Tcp(hostname, port, {
       onData: (data) => {
@@ -69,6 +73,12 @@ export class Tls1_2 implements Transport {
             const serverHello = parseServerHello(record);
             this.connectionState.serverRandom = serverHello.random;
             this.cipherSuite = serverHello.cipherSuite;
+            break;
+          }
+          case 11: { // Server Certificate
+            const serverCertificate = parseServerCertificate(record);
+            // verify certificate
+            this.certs = serverCertificate.certificates;
             break;
           }
           default:

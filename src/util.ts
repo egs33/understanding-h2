@@ -39,4 +39,8 @@ export class BufferStream {
   public skip(bytes: number): void {
     this.index += bytes;
   }
+
+  get restLength(): number {
+    return this.buffer.length - this.index;
+  }
 }
