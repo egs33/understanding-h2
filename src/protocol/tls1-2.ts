@@ -146,11 +146,9 @@ export class Tls1_2 implements Transport {
       0x00, 0x9e, // CipherSuite: TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 (0x009e)
       1, //  CompressionMethod length: 1
       0, // CompressionMethod: null
-      ...NumToBytes(
-        serverNameExtension.length
+      ...NumToBytes(serverNameExtension.length
           + alpnExtension.length
-          + signatureAlgorithmsExtension.length, 2,
-      ), // Extension length
+          + signatureAlgorithmsExtension.length, 2), // Extension length
       ...serverNameExtension, // Extension
       ...alpnExtension,
       ...signatureAlgorithmsExtension,

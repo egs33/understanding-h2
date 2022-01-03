@@ -60,6 +60,8 @@ export class Tcp implements Transport {
 
   public end(): Promise<void> {
     this.checkWritable();
-    return new Promise((resolve) => this.socket?.end(resolve));
+    return new Promise((resolve) => {
+      this.socket?.end(resolve);
+    });
   }
 }

@@ -4,7 +4,7 @@ export type PromiseCapability<T > = {
   reject: (error: Error) => void,
 };
 
-export const NewPromiseCapability = <T extends unknown>(): PromiseCapability<T> => {
+export const NewPromiseCapability = <T>(): PromiseCapability<T> => {
   const capability: Partial<PromiseCapability<T>> = {};
   capability.promise = new Promise((resolve, reject) => {
     capability.resolve = resolve;
