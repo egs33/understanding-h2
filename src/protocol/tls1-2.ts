@@ -50,6 +50,8 @@ export class Tls1_2 implements Transport {
 
   private keyExchange: null | ServerKeyExchange = null;
 
+  private serverHelloDone = false;
+
   private partialPacket = Buffer.alloc(0);
 
   constructor(private hostname: string, port: number, option: Tls1_2Option) {
@@ -101,12 +103,8 @@ export class Tls1_2 implements Transport {
             this.keyExchange = serverKeyExchange;
             break;
           }
-          case 14: { // Server hello exchange
-            // const serverKeyExchange = parseServerServerKeyExchange(record);
-            // verify certificate
-            // this.certs = serverCertificate.certificates;
-            // console.log(serverKeyExchange);
-            console.log('server hello done');
+          case 14: { // Server hello done
+            this.serverHelloDone = true;
             break;
           }
           default:
