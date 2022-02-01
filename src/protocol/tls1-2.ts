@@ -5,6 +5,8 @@ import { BytesToNum, NumToBytes } from '../util';
 import { parseServerHello } from './tls1-2/server-hello';
 import type { Cert } from './tls1-2/server-certificate';
 import { parseServerCertificate } from './tls1-2/server-certificate';
+import type { ServerKeyExchange } from './tls1-2/server-key-exchange';
+import { parseServerServerKeyExchange } from './tls1-2/server-key-exchange';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export type Tls1_2Option = Partial<{
@@ -46,11 +48,15 @@ export class Tls1_2 implements Transport {
 
   private certs: null | Cert[] = null;
 
+  private keyExchange: null | ServerKeyExchange = null;
+
+  private partialPacket = Buffer.alloc(0);
+
   constructor(private hostname: string, port: number, option: Tls1_2Option) {
     this.tcp = new Tcp(hostname, port, {
       onData: (data) => {
         // TODO: consider fragmentation
-        console.log(data);
+        console.log('onData', data);
         if (typeof data === 'string') {
           throw new Error('onData: string is unexpected');
         }
@@ -63,11 +69,19 @@ export class Tls1_2 implements Transport {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private parsePacket(data: Buffer): void {
+  private parsePacket(packetData: Buffer): void {
+    const data = Buffer.concat([this.partialPacket, packetData]);
     const length = BytesToNum(data.slice(3, 5)) + 5;
+    console.log('length', length);
     const record = data.slice(0, length);
+    console.log('type', record[0], record[5]);
     switch (record[0]) { // ContentType
       case 22: { // handshake
+        const handShakeLength = BytesToNum(data.slice(3, 5));
+        if (handShakeLength > data.length) { // fragment
+          this.partialPacket = Buffer.concat([this.partialPacket, data]);
+          return;
+        }
         switch (record[5]) { // handShakeType
           case 2: { // Server Hello
             const serverHello = parseServerHello(record);
@@ -79,6 +93,20 @@ export class Tls1_2 implements Transport {
             const serverCertificate = parseServerCertificate(record);
             // verify certificate
             this.certs = serverCertificate.certificates;
+            break;
+          }
+          case 12: { // Server key exchange
+            const serverKeyExchange = parseServerServerKeyExchange(record);
+            // verify signature
+            this.keyExchange = serverKeyExchange;
+            break;
+          }
+          case 14: { // Server hello exchange
+            // const serverKeyExchange = parseServerServerKeyExchange(record);
+            // verify certificate
+            // this.certs = serverCertificate.certificates;
+            // console.log(serverKeyExchange);
+            console.log('server hello done');
             break;
           }
           default:
@@ -93,6 +121,8 @@ export class Tls1_2 implements Transport {
     const rest = data.slice(length);
     if (rest.length > 0) {
       this.parsePacket(rest);
+    } else {
+      console.log('packet finish');
     }
   }
 
